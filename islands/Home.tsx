@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import Header from "~/components/Header.tsx";
 import FileUpload from "~/islands/FileUpload.tsx";
 import LoadingSpinner from "~/components/LoadingSpinner.tsx";
-import Graph from "~/islands/Graph.tsx";
+import GraphContainer from "~/islands/GraphContainer.tsx";
 
 interface Node {
   id: string;
@@ -78,15 +78,42 @@ export default function Home() {
   const [fileData, setFileData] = useState<FileData | null>(null);
   const [graphData, setGraphData] = useState<GraphData | null>(null);
   const [sourceData, setSourceData] = useState<string[][] | null>(null);
+  const [zoom, setZoom] = useState<number>(1);
   const graphRef = useRef<HTMLDivElement>(null);
 
+  const ZOOM_LEVELS = [
+    "max-w-xl",
+    "max-w-2xl",
+    "max-w-3xl",
+    "max-w-4xl",
+    "max-w-5xl",
+    "max-w-6xl",
+  ];
+
   useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const csvUrl = urlParams.get("url");
+
     fetch("/dataset.csv").then((response) => response.text()).then((data) => {
       const [, ...rows] = data.split("\n").map((row) => row.split(","));
       rows.sort(([idxA], [idxB]) => parseInt(idxA) - parseInt(idxB));
-
       setSourceData(rows);
     });
+
+    if (csvUrl) {
+      setIsLoading(true);
+      fetch(csvUrl)
+        .then((response) => response.text())
+        .then((csvData) => {
+          const rows = csvData.split("\n").map((row) => row.split(","));
+          setFileData({ fileName: "remote-data.csv", data: rows });
+          setIsLoading(false);
+        })
+        .catch((error) => {
+          console.error("Error loading CSV from URL:", error);
+          setIsLoading(false);
+        });
+    }
   }, []);
 
   useEffect(() => {
@@ -95,12 +122,6 @@ export default function Home() {
       setGraphData(processedData);
     }
   }, [fileData, sourceData]);
-
-  useEffect(() => {
-    if (graphData && graphRef.current) {
-      graphRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [graphData]);
 
   const handleFileUpload = (file: File): void => {
     setIsLoading(true);
@@ -121,23 +142,36 @@ export default function Home() {
     reader.readAsText(file);
   };
 
+  const handleSaveCanvas = () => {
+    const canvasElements = Array.from(document.getElementsByTagName("canvas"));
+    const [canvas] = canvasElements;
+    if (!canvas) {
+      console.error("No canvas element found");
+      return;
+    }
+
+    const link = document.createElement("a");
+    link.download = "deep_funding_graph.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-      <div className="max-w-4xl mx-auto px-4 py-16">
+      <div className={`${ZOOM_LEVELS[zoom]} mx-auto px-4 py-16`}>
         <Header />
         {!graphData && <FileUpload onFileUpload={handleFileUpload} />}
 
         {isLoading && <LoadingSpinner />}
 
         {graphData && !isLoading && (
-          <div className="mt-8" ref={graphRef}>
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">Project Weights</h2>
-              <div className="aspect-w-16 aspect-h-16 border flex items-center justify-center rounded-lg overflow-hidden">
-                <Graph data={graphData} />
-              </div>
-            </div>
-          </div>
+          <GraphContainer
+            graphRef={graphRef}
+            graphData={graphData}
+            zoom={zoom}
+            onZoomChange={setZoom}
+            onSave={handleSaveCanvas}
+          />
         )}
       </div>
     </main>
