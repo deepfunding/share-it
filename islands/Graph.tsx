@@ -1,7 +1,7 @@
 import { Cosmograph } from "@cosmograph/react";
 import { type GraphData } from "~/islands/Home.tsx";
 
-const Graph: React.FC<{ data: GraphData }> = ({ data }) => {
+const Graph: React.FC<{ data: GraphData; zoom: number }> = ({ data, zoom }) => {
   return (
     <Cosmograph
       nodes={data.nodes}
@@ -19,7 +19,8 @@ const Graph: React.FC<{ data: GraphData }> = ({ data }) => {
       nodeSize={(node) => node.size}
       linkWidth={(link) => link.value}
       linkColor={() => `rgb(128, 128, 128)`}
-      initialZoomLevel={1}
+      initialZoomLevel={zoom}
+      nodeSizeScale={1 + zoom / 10}
       showDynamicLabels={false}
       useQuadtree={true}
       backgroundColor="rgb(255, 255, 255)"
