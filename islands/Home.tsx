@@ -42,7 +42,7 @@ const processUserSubmission = (
 
     if (isNaN(numericWeight)) return;
 
-    const [, project_a, project_b] = sourceData[parseInt(id) + 1];
+    const [, project_a, project_b] = sourceData[parseInt(id) - 1];
 
     const nodeA = `Project A (${id})`;
     const nodeB = `Project B (${id})`;
