@@ -5,13 +5,14 @@ import FileUpload from "~/islands/FileUpload.tsx";
 import LoadingSpinner from "~/components/LoadingSpinner.tsx";
 import GraphContainer from "~/islands/GraphContainer.tsx";
 
-interface Node {
+export interface Node {
   id: string;
   label: string;
   size: number;
+  color?: string;
 }
 
-interface Link {
+export interface Link {
   source: string;
   target: string;
   weight: number;
@@ -28,6 +29,9 @@ interface FileData {
   data: string[][];
 }
 
+export const ROOT_NODE = "deepfunding_root";
+export const ROOT_NODE_COLOR = [159, 58, 188];
+
 const processUserSubmission = (
   data: string[][],
   sourceData: string[][],
@@ -37,33 +41,43 @@ const processUserSubmission = (
 
   const rows = data[0][0].toLowerCase() === "id" ? data.slice(1) : data;
 
-  rows.forEach(([id, weight]) => {
+  rows.forEach(([id, weight], idx) => {
     const numericWeight = parseFloat(weight);
 
     if (isNaN(numericWeight)) return;
 
     const [, project_a, project_b] = sourceData[parseInt(id) - 1];
+    const childId = `${project_b}_${idx}`;
 
-    const nodeA = `Project A (${id})`;
-    const nodeB = `Project B (${id})`;
+    if (!nodes.has(project_a)) {
+      nodes.set(project_a, {
+        id: project_a,
+        label: project_a,
+        size: numericWeight,
+        color: `rgb(${ROOT_NODE_COLOR.join(", ")})`,
+      });
+    }
 
-    nodes.set(nodeA, {
-      id: nodeA,
-      label: project_a,
-      size: numericWeight * 10,
-    });
+    if (!nodes.has(childId)) {
+      nodes.set(childId, {
+        id: childId,
+        label: project_b,
+        size: numericWeight,
+      });
+    }
 
-    nodes.set(nodeB, {
-      id: nodeB,
-      label: project_b,
-      size: numericWeight * 10,
+    links.push({
+      source: project_a,
+      target: childId,
+      weight: numericWeight * 1,
+      value: numericWeight,
     });
 
     links.push({
-      source: nodeA,
-      target: nodeB,
-      weight: numericWeight * 10,
-      value: numericWeight,
+      source: ROOT_NODE,
+      target: project_a,
+      weight: 1,
+      value: 1,
     });
   });
 
