@@ -39,7 +39,7 @@ const getNodeColor = (node: Node) => {
   const g = Math.round(149 - (100 * value));
   const b = Math.round(237 - (100 * value));
 
-  return node.color ?? `rgb(${r}, ${g}, ${b})`;
+  return node.color ?? `rgba(${r}, ${g}, ${b}, ${node.size})`;
 };
 
 const Graph: React.FC<{ data: GraphData; zoom: number }> = ({ data }) => {
